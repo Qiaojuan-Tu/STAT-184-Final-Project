@@ -1,0 +1,127 @@
+---
+title: "Final Project"
+author: "Qiaojuan Tu"
+date: "12/13/2020"
+output: html_document
+---
+
+## Purpose
+As we all know that U.S has been one of the top countries that imports a huge amount of goods from China. We can see that goods from China has played an important role in American people's life. So my interested research question is: 
+
+1. How the trend of the imports from China looks like, increasing or decreasing?
+
+2. What are some of the major imports from China?
+
+3. How the trend from China compared to other major imports countries that U.S. imports from, such as Canada and Mexico?
+
+
+## Data Access
+```{r}
+library(readr)
+library(ggplot2)
+library(tidyr)
+library(DataComputing)
+library(tidyverse)
+
+#import saved data
+Data <- read_csv("WITS-Partner.csv") #the primary data set
+head(Data)
+
+ChinaProduct <- read_csv("WITS-ChinaProduct.csv")
+head(ChinaProduct)
+
+#inspect the the datasets 
+str(Data)
+str(ChinaProduct)
+
+names(Data)
+names(ChinaProduct)
+
+```
+
+## Data Wrangling
+```{r}
+#Data wrangling for the primary data set: sort out China from the variable
+Data1 <- 
+  Data %>%
+  filter(`Partner Name` == "China") %>%
+  gather(key = Year, value = import,"1991", "1992", "1993", "1994", "1995","1996", "1997", "1998", "1999","2000", "2001","2002", "2003", "2004", "2005", "2006", "2007", "2008", "2009", "2010", "2011", "2012", "2013", "2014", "2015", "2016", "2017", "2018") %>%
+  mutate(import = `import`/1000000)%>%
+  select(`import`, Year) %>%
+  add_column(Country = "China", .after = 2)
+
+
+#Data Wrangling for the secondary data set: Scaling the numbers and change the name of the variable 
+Data2 <-
+  ChinaProduct %>%
+  mutate(Import = `Import (US$ Thousand)`/1000000, Group=`Product Group` )
+ 
+
+
+Data3 <- 
+  Data %>%
+  filter(`Partner Name` == "Canada") %>%
+  gather(key = Year, value = import, "1991", "1992", "1993", "1994", "1995","1996", "1997", "1998", "1999","2000", "2001","2002", "2003", "2004", "2005", "2006", "2007", "2008", "2009", "2010", "2011", "2012", "2013", "2014", "2015", "2016", "2017", "2018") %>%
+  mutate(import = `import`/1000000) %>%
+  select(`import`, Year)%>%
+  add_column(Country="Canada", .after = 2)
+
+Data4 <- 
+ Data %>%
+  filter(`Partner Name` == "Mexico") %>%
+  gather(key = Year, value = import, "1991", "1992", "1993", "1994", "1995","1996", "1997", "1998", "1999","2000", "2001","2002", "2003", "2004", "2005", "2006", "2007", "2008", "2009", "2010", "2011", "2012", "2013", "2014", "2015", "2016", "2017", "2018") %>%
+  mutate(import = `import`/1000000) %>%
+  select(`import`, Year)%>%
+  add_column(Country="Mexico", .after = 2)
+
+
+China_Canada <-
+  full_join(Data1, Data3)
+
+China_Mexico <- 
+  full_join(Data1, Data4)
+  
+
+
+```
+
+
+## Data Visualization
+```{r}
+#Trend for imports from China
+
+Data1 %>%
+   ggplot(aes(x=as.numeric(as.character(`Year`)), y = `import`)) + geom_point() +geom_line() + ggtitle("US Imports from China in US$billion (Year 1991 - 2018)") + theme(axis.text = element_text(angle = 90)) + labs(x="Year", y= "import in billion dollars") 
+
+#Bar graph to show the categories of imports
+Data2 %>%
+  mutate(Import = `Import (US$ Thousand)`/1000000, Group=`Product Group` ) %>%
+  ggplot(aes(x = reorder(Group, -Import), y = round(Import, digits=3), fill = reorder(Group, -Import), label = round(Import, digits=2))) + geom_bar(stat = "identity")+theme(axis.text = element_text(size=10, angle = 90), legend.position = "bottom", legend.title = element_blank()) +ggtitle("Categories of different of imports from China in year 2018 ") + labs(x="Product group", y="Imports from China in US$Billion") + geom_text(aes(label= round(Import, digits=1), angle=0)) 
+
+
+#Layered dot graph for China and Canada
+China_Canada %>%
+  ggplot(aes(x=as.numeric(as.character(`Year`)), y = `import`, color = Country))+geom_point() +geom_line()+ ggtitle("US Imports from China vs. Canada in US$billion (Year 1991 - 2018)") + theme(axis.text = element_text(angle = 90)) + labs(x="Year", y= "import in billion dollars")
+
+
+#Layered dot graph for China and Mexico 
+China_Mexico %>%
+  ggplot(aes(x=as.numeric(as.character(`Year`)), y = `import`, color = Country))+geom_point() +geom_line()+ ggtitle("US Imports from China vs. Mexico in US$billion (Year 1991 - 2018)") + theme(axis.text = element_text(angle = 90)) + labs(x="Year", y= "import in billion dollars")
+
+
+```
+
+## Key Takeaway and Anaswer the Research Question
+
+1. Based on the visuals created above, we can conclude that from year 1991 tp 2018, the general trend of the U.S. imports from China is in an increasing rate, except for the year 2009 and 2016. 
+
+2. The top 3 categories of U.S. imports from China are Mechanical Goods and Electrical Goods, followed by Capital Goods and Consumer Goods.
+
+3. The U.S. imports from Canada and Mexico are in a increasing trend as well, but China has been leading in the past decade or so. Also, we can see that all three countries experienced falls around year 2009 and 2016 where the Financial Crisis and the U.S. election occurred during those time. 
+
+## Challenges
+
+During this project, I have encountered several challenges. First one is to figure out how to make different attributes fit in the graph where all the axis names and numbers can be seen properly. Another one is to make the Variable Year from a categorical variable to a numerical variable to the ggplot2 function can be functioned properly. 
+
+
+One of the technical challenge that I did not overcome is that I could not figure out a way to make the Canada and Mexico graphs put side by side in a facet likely situation, but I have failed to do that. I have tried seveal ways to make that happen, but non of them worked. 
